@@ -59,9 +59,9 @@ class PandaEnv:
 
     # dictionary than define initial joint position of the robot
     _joint_initial_position = OrderedDict([
-        ('panda_joint1', 0.0), ('panda_joint2', -0.54), ('panda_joint3', 0.0),
-        ('panda_joint4', -2.6), ('panda_joint5', -0.30), ('panda_joint6', 2.0),
-        ('panda_joint7', 1.0), ('panda_finger_joint1', 0.02), ('panda_finger_joint2', 0.02)
+        ('panda_joint1', 0.0), ('panda_joint2', -0.405), ('panda_joint3', 0.0),
+        ('panda_joint4', -2.150), ('panda_joint5', 0.0), ('panda_joint6', 2.0),
+        ('panda_joint7', 0.812), ('panda_finger_joint1', 0.04), ('panda_finger_joint2', 0.04)
    ])
 
     # dictionary than associate joint name to URDF file index
@@ -115,7 +115,7 @@ class PandaEnv:
 
         # pybullet data path -> /home/laurent/test_rl/ve_pybullet/lib/python3.5/site-packages/pybullet_data
         pybullet_data_path = pybullet_data.getDataPath()
-        #print("=> data path -> {0}".format(pybullet_data_path))
+        # print("=> data path -> {0}".format(pybullet_data_path))
 
         # Add a search data path
         p.setAdditionalSearchPath(pybullet_data_path)
@@ -151,7 +151,7 @@ class PandaEnv:
         self.list_lower_limits, self.list_upper_limits, self.list_ranges, self.list_rest_pos = self.get_joint_ranges()
 
 
-    def show_sliders(self):
+    def show_sliders(self, prefix_name = ''):
 
         index = 0
         for item in self._joint_name_to_index.items():
@@ -160,11 +160,22 @@ class PandaEnv:
             ll = self.list_lower_limits[index]
             ul = self.list_upper_limits[index]
             joint_value = self._joint_initial_position[joint_name]
-            slider = p.addUserDebugParameter(joint_name, ll, ul, joint_value) # add a slider for that joint with the limits
+            slider = p.addUserDebugParameter(prefix_name + joint_name, ll, ul, joint_value) # add a slider for that joint with the limits
+            self._joint_name_to_slider[joint_name] = slider
             index = index + 1
 
-            self._joint_name_to_slider[joint_name] = slider
-        
+
+    def apply_sliders(self):
+        for joint_name in self._joint_name_to_slider.keys():
+            slider = self._joint_name_to_slider[joint_name] # get the slider of that joint name
+            slider_value = p.readUserDebugParameter(slider) # read the slider value
+            joint_index = self._joint_name_to_index[joint_name]
+            p.setJointMotorControl2(self.robot_id, joint_index, p.POSITION_CONTROL,
+                                        targetPosition=slider_value,
+                                        positionGain=0.2, velocityGain=1.0,
+                                        physicsClientId=self._physics_client_id)
+            p.stepSimulation(physicsClientId=self._physics_client_id)
+
 
     def get_workspace(self):
         return [i[:] for i in self._workspace_lim]
