@@ -11,6 +11,20 @@ laurent.lequievre@uca.fr
 import pybullet as p
 import pybullet_data
 import os, inspect
+from time import sleep
+
+debug_print_vertices = False
+
+def print_mesh_data_vertices(objectId):
+  data = p.getMeshData(objectId, -1, flags=p.MESH_DATA_SIMULATION_MESH)
+  # data[0] = amount of vertices
+  #print("data[0] = ", data[0])
+  # data[1] = list of tuples (each tuple contain 3D pos of a vertice)
+  #print("data[1] = ", data[1])  
+  for i in range(data[0]):
+    pos = data[1][i]
+    uid = p.addUserDebugText(str(i), pos, textColorRGB=[1,1,1])
+    
 
 # Get current file name (deformable_cylinder.py)
 current_frame = inspect.currentframe()
@@ -49,11 +63,39 @@ planId = p.loadURDF("plane.urdf", [0.0,0.0,-0.1])
 
 base_orientation_cylinder = p.getQuaternionFromEuler((0.0, 1.57, 0.0))
 
-base_position_cylinder = [-0.75,0.0,0.52]
+base_position_cylinder = [-0.775,0.0,0.52]
+# cylinder length = 1.55
 
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 100, collisionMargin = 0.005, useMassSpring=0, useBendingSprings=0, useNeoHookean = 1, NeoHookeanMu = 83200, NeoHookeanLambda = 83200, NeoHookeanDamping = 1000, springElasticStiffness=0.0, springDampingStiffness=0.0, springBendingStiffness=0.0, springDampingAllDirections=0, frictionCoeff=.5, useFaceContact=0, useSelfCollision=0, repulsionStiffness=0.0)
 
-cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 10.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 83200, NeoHookeanLambda = 83200, NeoHookeanDamping = 1000, frictionCoeff=.5)
+cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 10.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 83200, NeoHookeanLambda = 83200, NeoHookeanDamping = 1000, frictionCoeff=.5, repulsionStiffness=800.0)
+
+if (debug_print_vertices):
+    print_mesh_data_vertices(cylinderId)
+
+#boxId_Left = p.loadURDF("cube.urdf", basePosition = [0.833,0,0.2], globalScaling = 0.05, useMaximalCoordinates = True)
+#boxId_Right = p.loadURDF("cube.urdf", basePosition = [-0.775,0,0.2], globalScaling = 0.05, useMaximalCoordinates = True)
+
+
+basePosition_box_left = [1.3,0.0,0.5]
+baseOrientation_box_left = [0.0, 0.0, 0.0, 1.0]
+
+basePosition_box_right = [-1.3,0.0,0.5]
+baseOrientation_box_right = [0.0, 0.0, 0.0, 1.0]
+
+boxId_Left = p.loadURDF("cube.urdf", basePosition = basePosition_box_left, baseOrientation= baseOrientation_box_left, globalScaling = 1.0, useMaximalCoordinates = True, useFixedBase=False)
+
+boxId_Right = p.loadURDF("cube.urdf", basePosition = basePosition_box_right, baseOrientation= baseOrientation_box_right, globalScaling = 1.0, useMaximalCoordinates = True, useFixedBase=False)
+
+
+
+sleep(1.0)
+
+
+#p.createSoftBodyAnchor(cylinderId ,5,boxId_Left,-1)
+#p.createSoftBodyAnchor(cylinderId ,0,boxId_Right,-1)
+#p.addUserDebugText("*", [0.777,0.0,-0.1], textColorRGB=[0,0,0])
+#p.createSoftBodyAnchor(cylinderId ,0,boxId_Right,-1)
 
 
 while True:
@@ -64,6 +106,11 @@ while True:
     # 'Enter' event = 65309, if so .. break the loop
     if 65309 in keys:
       break
+      
+    if 112 in keys: # Grasp the object by using force (with letter 'p' = 112)
+      basePosition_box_left[0]-=0.1
+      p.resetBasePositionAndOrientation(bodyUniqueId=boxId_Left, posObj=basePosition_box_left, ornObj= baseOrientation_box_left, physicsClientId=physics_client_id)
+	   
       
     p.stepSimulation(physicsClientId=physics_client_id)  
 
