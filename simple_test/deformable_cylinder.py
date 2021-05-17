@@ -63,7 +63,7 @@ planId = p.loadURDF("plane.urdf", [0.0,0.0,-0.1])
 
 base_orientation_cylinder = p.getQuaternionFromEuler((0.0, 1.57, 0.0))
 
-base_position_cylinder = [-0.775,0.0,0.52]
+base_position_cylinder = [1.775,0.0,0.52]
 # cylinder length = 1.55
 
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 100, collisionMargin = 0.005, useMassSpring=0, useBendingSprings=0, useNeoHookean = 1, NeoHookeanMu = 83200, NeoHookeanLambda = 83200, NeoHookeanDamping = 1000, springElasticStiffness=0.0, springDampingStiffness=0.0, springBendingStiffness=0.0, springDampingAllDirections=0, frictionCoeff=.5, useFaceContact=0, useSelfCollision=0, repulsionStiffness=0.0)
@@ -83,11 +83,17 @@ baseOrientation_box_left = [0.0, 0.0, 0.0, 1.0]
 basePosition_box_right = [-1.3,0.0,0.5]
 baseOrientation_box_right = [0.0, 0.0, 0.0, 1.0]
 
-boxId_Left = p.loadURDF("cube.urdf", basePosition = basePosition_box_left, baseOrientation= baseOrientation_box_left, globalScaling = 1.0, useMaximalCoordinates = True, useFixedBase=False)
+#boxId_Left = p.loadURDF("cube.urdf", basePosition = basePosition_box_left, baseOrientation= baseOrientation_box_left, globalScaling = 1.0, useMaximalCoordinates = True, useFixedBase=False)
 
-boxId_Right = p.loadURDF("cube.urdf", basePosition = basePosition_box_right, baseOrientation= baseOrientation_box_right, globalScaling = 1.0, useMaximalCoordinates = True, useFixedBase=False)
+#boxId_Right = p.loadURDF("cube.urdf", basePosition = basePosition_box_right, baseOrientation= baseOrientation_box_right, globalScaling = 1.0, useMaximalCoordinates = True, useFixedBase=False)
 
 
+cube_prismatic_left_Id = p.loadURDF("deformable_object/cube_prismatic_left.urdf", [0.0,0.0,0.0])
+
+cube_prismatic_right_Id = p.loadURDF("deformable_object/cube_prismatic_right.urdf", [0.0,0.0,0.0])
+
+p.resetBasePositionAndOrientation(bodyUniqueId=cube_prismatic_right_Id, posObj=[5.0,0.0,0.0], ornObj=[0,0,0,1], physicsClientId=physics_client_id)
+	  
 
 sleep(1.0)
 
@@ -96,6 +102,13 @@ sleep(1.0)
 #p.createSoftBodyAnchor(cylinderId ,0,boxId_Right,-1)
 #p.addUserDebugText("*", [0.777,0.0,-0.1], textColorRGB=[0,0,0])
 #p.createSoftBodyAnchor(cylinderId ,0,boxId_Right,-1)
+
+	
+	
+slider_cube_prismatic_left = p.addUserDebugParameter("left", 0.0, 2.0, 0) # add a slider for that joint with the limits
+slider_cube_prismatic_right = p.addUserDebugParameter("right", 0.0, 2.0, 0) # add a slider for that joint with the limits
+            
+	#p.resetJointState(prismaticId,joint,-0.9)
 
 
 while True:
@@ -106,11 +119,24 @@ while True:
     # 'Enter' event = 65309, if so .. break the loop
     if 65309 in keys:
       break
-      
+    """  
     if 112 in keys: # Grasp the object by using force (with letter 'p' = 112)
       basePosition_box_left[0]-=0.1
       p.resetBasePositionAndOrientation(bodyUniqueId=boxId_Left, posObj=basePosition_box_left, ornObj= baseOrientation_box_left, physicsClientId=physics_client_id)
 	   
+     """
+     
+    slider_value_left = p.readUserDebugParameter(slider_cube_prismatic_left)
+    slider_value_right = p.readUserDebugParameter(slider_cube_prismatic_right)
+    
+    
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=0, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_left,
+                                    physicsClientId=physics_client_id)
+                                    
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_right_Id, jointIndex=0, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_right,
+                                    physicsClientId=physics_client_id)
+      
+	    
       
     p.stepSimulation(physicsClientId=physics_client_id)  
 
