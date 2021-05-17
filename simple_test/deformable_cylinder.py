@@ -87,29 +87,36 @@ baseOrientation_box_right = [0.0, 0.0, 0.0, 1.0]
 
 #boxId_Right = p.loadURDF("cube.urdf", basePosition = basePosition_box_right, baseOrientation= baseOrientation_box_right, globalScaling = 1.0, useMaximalCoordinates = True, useFixedBase=False)
 
+cube_prismatic_left_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_left.urdf", [0.0,0.0,0.0])
 
-cube_prismatic_left_Id = p.loadURDF("deformable_object/cube_prismatic_left.urdf", [0.0,0.0,0.0])
-
-cube_prismatic_right_Id = p.loadURDF("deformable_object/cube_prismatic_right.urdf", [0.0,0.0,0.0])
+cube_prismatic_right_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_right.urdf", [0.0,0.0,0.0])
 
 p.resetBasePositionAndOrientation(bodyUniqueId=cube_prismatic_right_Id, posObj=[5.0,0.0,0.0], ornObj=[0,0,0,1], physicsClientId=physics_client_id)
-	  
 
+"""
+p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=2, controlMode=p.POSITION_CONTROL, targetPosition=0.04,
+                                    physicsClientId=physics_client_id)
+                                    
+p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=3, controlMode=p.POSITION_CONTROL, targetPosition=0.04,
+                                    physicsClientId=physics_client_id)
+ """                                   
 sleep(1.0)
-
 
 #p.createSoftBodyAnchor(cylinderId ,5,boxId_Left,-1)
 #p.createSoftBodyAnchor(cylinderId ,0,boxId_Right,-1)
 #p.addUserDebugText("*", [0.777,0.0,-0.1], textColorRGB=[0,0,0])
 #p.createSoftBodyAnchor(cylinderId ,0,boxId_Right,-1)
 
-	
-	
-slider_cube_prismatic_left = p.addUserDebugParameter("left", 0.0, 2.0, 0) # add a slider for that joint with the limits
-slider_cube_prismatic_right = p.addUserDebugParameter("right", 0.0, 2.0, 0) # add a slider for that joint with the limits
-            
-	#p.resetJointState(prismaticId,joint,-0.9)
+slider_cube_prismatic_left = p.addUserDebugParameter("left prismatic", 0.0, 2.0, 0) # add a slider for that joint with the limits
+slider_cube_prismatic_right = p.addUserDebugParameter("right prismatic", 0.0, 2.0, 0) # add a slider for that joint with the limits
+    
+slider_cube_revolute_left = p.addUserDebugParameter("left revolute", -2.9, 2.9, 0)
 
+slider_cube_gripper_left = p.addUserDebugParameter("left gripper", 0.0, 0.04, 0.04)
+
+slider_cube_revolute_right = p.addUserDebugParameter("right revolute", -2.9, 2.9, 0)
+
+slider_cube_gripper_right = p.addUserDebugParameter("right gripper", 0.0, 0.04, 0.04)
 
 while True:
 
@@ -126,18 +133,45 @@ while True:
 	   
      """
      
-    slider_value_left = p.readUserDebugParameter(slider_cube_prismatic_left)
-    slider_value_right = p.readUserDebugParameter(slider_cube_prismatic_right)
+    slider_value_prismatic_left = p.readUserDebugParameter(slider_cube_prismatic_left)
+    slider_value_prismatic_right = p.readUserDebugParameter(slider_cube_prismatic_right)
+    
+    slider_value_revolute_left = p.readUserDebugParameter(slider_cube_revolute_left)
+    slider_value_gripper_left = p.readUserDebugParameter(slider_cube_gripper_left)
+    
+    slider_value_revolute_right = p.readUserDebugParameter(slider_cube_revolute_right)
+    slider_value_gripper_right = p.readUserDebugParameter(slider_cube_gripper_right)
     
     
-    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=0, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_left,
+    
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=0, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_prismatic_left,
                                     physicsClientId=physics_client_id)
                                     
-    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_right_Id, jointIndex=0, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_right,
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_right_Id, jointIndex=0, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_prismatic_right,
                                     physicsClientId=physics_client_id)
       
 	    
-      
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=1, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_revolute_left,
+                                    physicsClientId=physics_client_id)
+                                    
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=2, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_gripper_left,
+                                    physicsClientId=physics_client_id)
+                                    
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=3, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_gripper_left,
+                                    physicsClientId=physics_client_id)
+                                    
+                                    
+                                    
+                                    
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_right_Id, jointIndex=1, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_revolute_right,
+                                    physicsClientId=physics_client_id)
+                                    
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_right_Id, jointIndex=2, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_gripper_right,
+                                    physicsClientId=physics_client_id)
+                                    
+    p.setJointMotorControl2(bodyUniqueId=cube_prismatic_right_Id, jointIndex=3, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_gripper_right,
+                                    physicsClientId=physics_client_id)
+        
     p.stepSimulation(physicsClientId=physics_client_id)  
 
 # disconnect from the bullet environment
