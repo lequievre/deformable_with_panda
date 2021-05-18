@@ -71,7 +71,7 @@ base_position_cylinder = [1.775,0.0,0.52]
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 5.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 83200, NeoHookeanLambda = 83200, NeoHookeanDamping = 1000, frictionCoeff=.5)
 
 
-cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 5.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 20, frictionCoeff=5)
+cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 5.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 200, frictionCoeff=50, useFaceContact=1)
 
 
 if (debug_print_vertices):
