@@ -46,6 +46,8 @@ os.sys.path.insert(0, directory_name)
 
 physics_client_id = p.connect(p.GUI)
 
+p.setTimeStep(timeStep=1./240, physicsClientId=physics_client_id)
+
 pybullet_data_path = pybullet_data.getDataPath()
 print("pybullet_data_path = ", pybullet_data_path)
 
@@ -63,7 +65,10 @@ planId = p.loadURDF("plane.urdf", [0.0,0.0,-0.1])
 
 base_orientation_cylinder = p.getQuaternionFromEuler((0.0, 1.57, 0.0))
 
-base_position_cylinder = [1.775,0.0,0.52]
+base_position_cylinder = [1.775,0.0,0.0]
+
+flags = p.URDF_USE_SELF_COLLISION
+
 # cylinder length = 1.55
 
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 100, collisionMargin = 0.005, useMassSpring=0, useBendingSprings=0, useNeoHookean = 1, NeoHookeanMu = 83200, NeoHookeanLambda = 83200, NeoHookeanDamping = 1000, springElasticStiffness=0.0, springDampingStiffness=0.0, springBendingStiffness=0.0, springDampingAllDirections=0, frictionCoeff=.5, useFaceContact=0, useSelfCollision=0, repulsionStiffness=0.0)
@@ -71,8 +76,14 @@ base_position_cylinder = [1.775,0.0,0.52]
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 5.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 83200, NeoHookeanLambda = 83200, NeoHookeanDamping = 1000, frictionCoeff=.5)
 
 
-cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 5.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 200, frictionCoeff=50, useFaceContact=1)
+#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 2.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 200, frictionCoeff=50, useFaceContact=1 )
 
+cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder)
+
+texUid = p.loadTexture("deformable_object/texture/texture_frite.png")
+p.changeVisualShape(cylinderId, -1, textureUniqueId=texUid)
+
+#objectUid = p.loadURDF("random_urdfs/000/000.urdf", globalScaling = 2.0, basePosition=[0.0,0,0.0])
 
 if (debug_print_vertices):
     print_mesh_data_vertices(cylinderId)
@@ -91,9 +102,11 @@ baseOrientation_box_right = [0.0, 0.0, 0.0, 1.0]
 
 #boxId_Right = p.loadURDF("cube.urdf", basePosition = basePosition_box_right, baseOrientation= baseOrientation_box_right, globalScaling = 1.0, useMaximalCoordinates = True, useFixedBase=False)
 
-cube_prismatic_left_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_left.urdf", [0.0,0.0,0.0])
 
-cube_prismatic_right_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_right.urdf", [0.0,0.0,0.0])
+
+cube_prismatic_left_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_left.urdf", [0.0,0.0,0.0],flags=flags)
+
+cube_prismatic_right_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_right.urdf", [0.0,0.0,0.0],flags=flags)
 
 p.resetBasePositionAndOrientation(bodyUniqueId=cube_prismatic_right_Id, posObj=[5.0,0.0,0.0], ornObj=[0,0,0,1], physicsClientId=physics_client_id)
 
