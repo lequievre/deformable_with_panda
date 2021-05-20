@@ -76,14 +76,30 @@ flags = p.URDF_USE_SELF_COLLISION
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 5.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 83200, NeoHookeanLambda = 83200, NeoHookeanDamping = 1000, frictionCoeff=.5)
 
 
-#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 2.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 200, frictionCoeff=50, useFaceContact=1 )
+#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 2.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 200, frictionCoeff=50, useSelfCollision = 1, repulsionStiffness = 800)
 
-cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder)
+cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 4, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 0.1, useSelfCollision = 1, frictionCoeff = 0.50, collisionMargin = 0.001)
+
+
+#cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder)
+
+
+# Coeff de lamé : https://fr.wikipedia.org/wiki/Coefficient_de_Lam%C3%A9
+# Coeff de poisson : https://fr.wikipedia.org/wiki/Coefficient_de_Poisson
+# module de young : https://fr.wikipedia.org/wiki/Module_de_Young
+# min, max de Neo : https://github.com/bulletphysics/bullet3/issues/3136
+# code bullet min, max : https://github.com/bulletphysics/bullet3/blob/master/examples/DeformableDemo/VolumetricDeformable.cpp#L246
+# http://www.roto30.fr/polyethylene-tableau-des-caracteristiques/
+
+
 
 texUid = p.loadTexture("deformable_object/texture/texture_frite.png")
 p.changeVisualShape(cylinderId, -1, textureUniqueId=texUid)
 
 #objectUid = p.loadURDF("random_urdfs/000/000.urdf", globalScaling = 2.0, basePosition=[0.0,0,0.0])
+
+#bunnyId = p.loadSoftBody("deformable_object/torus/torus_textured.obj", simFileName="deformable_object/torus/torus.vtk", mass = 3, useNeoHookean = 1, NeoHookeanMu = 180, NeoHookeanLambda = 600, NeoHookeanDamping = 0.01, collisionMargin = 0.006, useSelfCollision = 1, frictionCoeff = 0.5, repulsionStiffness = 800)
+
 
 if (debug_print_vertices):
     print_mesh_data_vertices(cylinderId)
@@ -104,9 +120,9 @@ baseOrientation_box_right = [0.0, 0.0, 0.0, 1.0]
 
 
 
-cube_prismatic_left_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_left.urdf", [0.0,0.0,0.0],flags=flags)
+cube_prismatic_left_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_left.urdf", [0.0,0.0,0.0],flags=p.URDF_USE_SELF_COLLISION)
 
-cube_prismatic_right_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_right.urdf", [0.0,0.0,0.0],flags=flags)
+cube_prismatic_right_Id = p.loadURDF("deformable_object/CubePrismatic/cube_prismatic_right.urdf", [0.0,0.0,0.0],flags=p.URDF_USE_SELF_COLLISION)
 
 p.resetBasePositionAndOrientation(bodyUniqueId=cube_prismatic_right_Id, posObj=[5.0,0.0,0.0], ornObj=[0,0,0,1], physicsClientId=physics_client_id)
 
@@ -134,6 +150,8 @@ slider_cube_gripper_left = p.addUserDebugParameter("left gripper", 0.0, 0.04, 0.
 slider_cube_revolute_right = p.addUserDebugParameter("right revolute", -2.9, 2.9, 0)
 
 slider_cube_gripper_right = p.addUserDebugParameter("right gripper", 0.0, 0.04, 0.04)
+
+p.setRealTimeSimulation(0)
 
 while True:
 
@@ -167,7 +185,7 @@ while True:
     p.setJointMotorControl2(bodyUniqueId=cube_prismatic_right_Id, jointIndex=0, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_prismatic_right,
                                     physicsClientId=physics_client_id)
       
-	    
+    
     p.setJointMotorControl2(bodyUniqueId=cube_prismatic_left_Id, jointIndex=1, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_revolute_left,
                                     physicsClientId=physics_client_id)
                                     
@@ -188,6 +206,8 @@ while True:
                                     
     p.setJointMotorControl2(bodyUniqueId=cube_prismatic_right_Id, jointIndex=3, controlMode=p.POSITION_CONTROL, targetPosition=slider_value_gripper_right,
                                     physicsClientId=physics_client_id)
+                                 
+                                    
         
     p.stepSimulation(physicsClientId=physics_client_id)  
 

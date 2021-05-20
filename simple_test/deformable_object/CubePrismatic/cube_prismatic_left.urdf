@@ -52,7 +52,7 @@
   <joint name="panda_hand_joint" type="revolute">
     <parent link="childA"/>
     <child link="panda_hand"/>
-    <origin rpy="0 1.57 0.0" xyz="0.8 0 -0.06"/>
+    <origin rpy="3.14 0.0 0.0" xyz="0.9 0 0.03"/>
     <axis xyz="1 0 0"/>
     <limit effort="12" lower="-2.9671" upper="2.9671" velocity="2.6100"/>
   </joint>
@@ -60,20 +60,20 @@
   <link name="panda_hand">
   	<inertial>
       <origin rpy="0 0 0" xyz="0 0 0.04"/>
-       <mass value="20.81"/>
+       <mass value="0.81"/>
        <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
     </inertial>
     <visual>
       <geometry>
-        <!--<mesh filename="package://meshes/visual/hand.obj"/>-->
-        <box size="0.07 .1 .1"/>
+        <mesh filename="package://meshes/visual/hand.obj"/>
+        <!--<box size="0.07 .1 .1"/>-->
       </geometry>
       <material name="panda_white"/>
     </visual>
     <collision>
       <geometry>
-        <!--<mesh filename="package://meshes/collision/hand.obj"/>-->
-        <box size="0.07 .1 .1"/>
+        <mesh filename="package://meshes/collision/hand.obj"/>
+        <!--<box size="0.07 .1 .1"/>-->
       </geometry>
       <!--<contact_coefficients mu ="100" kp="1000" kd="1000"/>-->
       <material name="panda_white"/>
@@ -82,20 +82,20 @@
   <link name="panda_leftfinger">
   	<inertial>
       <origin rpy="0 0 0" xyz="0 0.01 0.02"/>
-       <mass value="10"/>
+       <mass value="0.1"/>
        <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
     <visual>
       <geometry>
-        <!--<mesh filename="package://meshes/visual/finger.obj"/>-->
-        <box size="0.07 .02 .1"/>
+        <mesh filename="package://meshes/visual/finger.obj"/>
+        <!--<box size="0.07 .02 .1"/>--->
       </geometry>
       <material name="panda_white"/>
     </visual>
     <collision>
       <geometry>
-        <!--<mesh filename="package://meshes/collision/finger.obj"/>-->
-        <box size="0.07 .02 .1"/>
+        <mesh filename="package://meshes/collision/finger.obj"/>
+        <!--<box size="0.07 .02 .1"/>-->
       </geometry>
       <material name="panda_white"/>
     </collision>
@@ -103,22 +103,22 @@
   <link name="panda_rightfinger">
   	<inertial>
       <origin rpy="0 0 0" xyz="0 -0.01 0.02"/>
-       <mass value="10"/>
+       <mass value="0.1"/>
        <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
     <visual>
       <origin rpy="0 0 3.14159265359" xyz="0 0 0"/>
       <geometry>
-        <!--<mesh filename="package://meshes/visual/finger.obj"/>-->
-        <box size="0.07 .02 .1"/>
+        <mesh filename="package://meshes/visual/finger.obj"/>
+        <!--<box size="0.07 .02 .1"/>-->
       </geometry>
       <material name="panda_white"/>
     </visual>
     <collision>
       <origin rpy="0 0 3.14159265359" xyz="0 0 0"/>
       <geometry>
-        <!--<mesh filename="package://meshes/collision/finger.obj"/>-->
-        <box size="0.07 .02 .1"/>
+        <mesh filename="package://meshes/collision/finger.obj"/>
+        <!--<box size="0.07 .02 .1"/>-->
       </geometry>
       <material name="panda_white"/>
     </collision>
