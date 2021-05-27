@@ -61,9 +61,13 @@ if(BULLET_FOUND)
 endif()
 
 if(PRINT_INFOS)
- message(STATUS "BULLET_FOUND = ${BULLET_FOUND}")
- message(STATUS "bullet include dir = ${BULLET_INCLUDE_DIR}")
- message(STATUS "bullet librairies = ${BULLET_LIBRARIES}")
+  if(BULLET_FOUND)
+    message(STATUS "BULLET_FOUND = ${BULLET_FOUND}")
+    message(STATUS "BULLET_INCLUDE_DIR = ${BULLET_INCLUDE_DIR}")
+    message(STATUS "BULLET_LIBRARIES = ${BULLET_LIBRARIES}")
+  else()
+    message(STATUS "BULLET NOT FOUND !!")
+  endif()
 endif()
 
 
