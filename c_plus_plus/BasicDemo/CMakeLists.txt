@@ -3,6 +3,9 @@
 # Institut Pascal UMR6602
 # laurent.lequievre@uca.fr
 
+# pthread -> sudo apt-get install libpthread-stubs0-dev
+# OpenGL -> sudo apt-get install libegl1-mesa-dev
+
 cmake_minimum_required(VERSION 2.4.3)
 
 PROJECT(BASIC_EXAMPLE)
