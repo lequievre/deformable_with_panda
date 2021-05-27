@@ -5,14 +5,14 @@
 
 cmake_minimum_required(VERSION 2.4.3)
 
-PROJECT(MY_TEST)
+PROJECT(HELLO_WORLD)
+
+message(STATUS "PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
+message(STATUS "CMAKE_CURRENT_LIST_DIR = ${CMAKE_CURRENT_LIST_DIR}")
 
 set(CMAKE_CXX_STANDARD 11)
-set(BULLET_ROOT "/home/laurent/git_projects/bullet3")
-# locate FindPackageHandleStandardArgs.cmake -> /usr/share/cmake-3.16/Modules/FindPackageHandleStandardArgs.cmake
-set(CMAKE_MODULE_PATH "/usr/share/cmake-3.16/Modules")
 
-include(FindBullet.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/FindBullet.cmake)
 
 # When we call find_package(Bullet), CMake will execute FindBullet.cmake
 find_package(Bullet)
