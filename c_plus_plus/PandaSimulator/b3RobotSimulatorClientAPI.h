@@ -1,7 +1,8 @@
 #ifndef B3_ROBOT_SIMULATOR_CLIENT_API_GUI_H
 #define B3_ROBOT_SIMULATOR_CLIENT_API_GUI_H
 
-#include "../SharedMemory/b3RobotSimulatorClientAPI_NoGUI.h"
+#include "SharedMemory/b3RobotSimulatorClientAPI_NoGUI.h"
+#include "SharedMemory/PhysicsClientC_API.h"
 
 ///The b3RobotSimulatorClientAPI_GUI is pretty much the C++ version of pybullet
 ///as documented in the pybullet Quickstart Guide
@@ -22,6 +23,10 @@ public:
 	virtual bool mouseMoveCallback(float x, float y);
 
 	virtual bool mouseButtonCallback(int button, int state, float x, float y);
+	
+	
+	b3PhysicsClientHandle& getPhysicsClientHandle();
+	int my_loadDeformableBody(const std::string& fileName, const struct b3RobotSimulatorLoadDeformableBodyArgs& args);
 };
 
 #endif  //B3_ROBOT_SIMULATOR_CLIENT_API_H

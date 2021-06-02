@@ -29,6 +29,61 @@ b3RobotSimulatorClientAPI::~b3RobotSimulatorClientAPI()
 {
 }
 
+
+
+int b3RobotSimulatorClientAPI::my_loadDeformableBody(const std::string& fileName, const struct b3RobotSimulatorLoadDeformableBodyArgs& args)
+{
+	if (!isConnected())
+	{
+		b3Warning("Not connected");
+		return -1;
+	}
+	
+	b3SharedMemoryStatusHandle statusHandle;
+	int statusType;
+	int bodyUniqueId;
+
+	b3SharedMemoryCommandHandle command = b3LoadSoftBodyCommandInit(m_data->m_physicsClientHandle, fileName.c_str());
+	b3LoadSoftBodySetStartPosition(command, args.m_startPosition[0], args.m_startPosition[1], args.m_startPosition[2]);
+	b3LoadSoftBodySetStartOrientation(command, args.m_startOrientation[0], args.m_startOrientation[1], args.m_startOrientation[2], args.m_startOrientation[3]);
+	b3LoadSoftBodySetScale(command, args.m_scale);
+	b3LoadSoftBodySetMass(command, args.m_mass);
+	b3LoadSoftBodySetCollisionMargin(command, args.m_collisionMargin);
+	if (args.m_NeoHookeanMu > 0)
+	{
+		b3LoadSoftBodyAddNeoHookeanForce(command, args.m_NeoHookeanMu, args.m_NeoHookeanLambda, args.m_NeoHookeanDamping);
+	}
+	if (args.m_springElasticStiffness > 0)
+	{
+		b3LoadSoftBodyAddMassSpringForce(command, args.m_springElasticStiffness, args.m_springDampingStiffness);
+	}
+	b3LoadSoftBodySetSelfCollision(command, args.m_useSelfCollision);
+	b3LoadSoftBodyUseFaceContact(command, args.m_useFaceContact);
+	b3LoadSoftBodySetFrictionCoefficient(command, args.m_frictionCoeff);
+	b3LoadSoftBodyUseBendingSprings(command, args.m_useBendingSprings, args.m_springBendingStiffness);
+	statusHandle = b3SubmitClientCommandAndWaitStatus(m_data->m_physicsClientHandle, command);
+	statusType = b3GetStatusType(statusHandle);
+	if (statusType != CMD_LOAD_SOFT_BODY_COMPLETED)
+	{
+		b3Warning("Cannot load soft body.");
+		bodyUniqueId = -1;
+	}
+	else
+	{
+		bodyUniqueId = b3GetStatusBodyIndex(statusHandle);
+	}
+	
+	return bodyUniqueId;
+}
+
+
+b3PhysicsClientHandle& b3RobotSimulatorClientAPI::getPhysicsClientHandle()
+{
+	return m_data->m_physicsClientHandle;
+}
+
+
+
 void b3RobotSimulatorClientAPI::renderScene()
 {
 	if (!isConnected())

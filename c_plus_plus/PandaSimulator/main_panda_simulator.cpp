@@ -21,18 +21,21 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	
-	//OpenGLGuiHelper my_gui_helper;
-	//sim->setGuiHelper(my_gui_helper);
 	
+	sim->configureDebugVisualizer(COV_ENABLE_RGB_BUFFER_PREVIEW, 0);
+	sim->configureDebugVisualizer(COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0);
+	sim->configureDebugVisualizer(COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0);
 	
 	sim->resetSimulation(RESET_USE_DEFORMABLE_WORLD);
 	
-	sim->configureDebugVisualizer(COV_ENABLE_GUI, 0);
+	//COV_ENABLE_GUI, COV_ENABLE_SHADOWS, COV_ENABLE_WIREFRAME 
+	sim->configureDebugVisualizer(COV_ENABLE_WIREFRAME, 0);
 	
 	sim->setTimeOut(10);
 	
 	//syncBodies is only needed when connecting to an existing physics server that has already some bodies
 	sim->syncBodies();
+	
 	
 	btScalar fixedTimeStep = 1. / 240.;
 
@@ -47,6 +50,18 @@ int main(int argc, char* argv[])
 	b3RobotSimulatorLoadUrdfFileArgs args;
 	args.m_startPosition.setValue(0.0, 0.0, 0.0);
 	int pandaIdx = sim->loadURDF("franka_panda/panda.urdf", args);
+	
+	
+	btVector3 basePosPanda;
+	btQuaternion baseOrnPanda;
+	sim->getBasePositionAndOrientation(pandaIdx, basePosPanda, baseOrnPanda);
+	
+	double cameraDistance = 2;
+	double cameraPitch = -20;
+	double cameraYaw = 0;
+	btVector3 cameraTargetPos = basePosPanda;
+	sim->resetDebugVisualizerCamera(cameraDistance, cameraPitch, cameraYaw, cameraTargetPos);
+	
 	
 	int numJoints = sim->getNumJoints(pandaIdx);
 	b3Printf("numJoints = %d", numJoints);
@@ -65,12 +80,12 @@ int main(int argc, char* argv[])
 	sim->changeDynamics(pandaIdx, -1, dynamicsArgs);
 	
 	
-	
 	sim->setRealTimeSimulation(false);
 	
-	
-	b3RobotSimulatorLoadDeformableBodyArgs deformable_args(2, .01, 0.006);
-	
+	// double scale = 1, double mass = 0.01, double collisionMargin = 0.006
+	b3RobotSimulatorLoadDeformableBodyArgs deformable_args(1, .01, 0.006);
+	btQuaternion q_cylinder = sim->getQuaternionFromEuler(btVector3(0.0, 1.57, 0.0));
+	btVector3 pos_cylinder(0.5,0.0,0.0);
 	deformable_args.m_springElasticStiffness = 1;
 	deformable_args.m_springDampingStiffness = .01;
 	deformable_args.m_springBendingStiffness = .1;
@@ -78,36 +93,41 @@ int main(int argc, char* argv[])
 	deformable_args.m_useSelfCollision = false;
 	deformable_args.m_useFaceContact = true;
 	deformable_args.m_useBendingSprings = true;
-	deformable_args.m_startPosition.setValue(5, 0, 0);
-	deformable_args.m_startOrientation.setValue(1, 0, 0, 1);
-
-	sim->loadDeformableBody("tetra_cylinder_50_cm.vtk",deformable_args);
+	deformable_args.m_startPosition = pos_cylinder;
+	deformable_args.m_startOrientation = q_cylinder;
 	
+	deformable_args.m_NeoHookeanMu = 0.071;
+	deformable_args.m_NeoHookeanLambda = 0.28;
+	deformable_args.m_NeoHookeanDamping= 100;
+	
+	//coeff de poisson = 0.4
+	
+	
+	
+
+	int cylinderId = sim->my_loadDeformableBody("tetra_cylinder_50_cm.vtk",deformable_args);
+   
+	int textureId = sim->loadTexture("texture_frite.png");
+	
+	b3RobotSimulatorChangeVisualShapeArgs deformable_args_visual;
+	deformable_args_visual.m_objectUniqueId = cylinderId;
+	deformable_args_visual.m_textureUniqueId = textureId;
+	
+	sim->changeVisualShape(deformable_args_visual);
 	
 	
 	bool quit = 0;
 	b3KeyboardEventsData keyEvents;
 	
-	/*GUIHelperInterface *my_gui_helper = sim->getGuiHelper();
+	int slider_test = sim->addUserDebugParameter("essai",-10, 10, 0);
 	
-	if (my_gui_helper == NULL)
-		printf("gui helper is NULL !!\n");
-	else
-		printf("gui helper is not NULL !!\n");
-						
-						
-	
-	
-	
-	SliderParams slider("Closing velocity", &sGripperClosingTargetVelocity);
-	
-	slider.m_minVal = -1;
-	slider.m_maxVal = 1;
-	//sim->getGuiHelper()->getParameterInterface()->registerSliderFloatParameter(slider);
-	*/
+	double value_slider;
 	
 	while (sim->canSubmitCommand() && (!quit))
 	{
+		
+		//value_slider = sim->readUserDebugParameter(slider_test);
+		//b3Printf("value_slider = %f", value_slider);
 		
 		sim->getKeyboardEvents(&keyEvents);
 		if (keyEvents.m_numKeyboardEvents)
