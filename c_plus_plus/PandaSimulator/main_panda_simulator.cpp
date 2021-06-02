@@ -7,6 +7,12 @@
 #include "CommonInterfaces/CommonGUIHelperInterface.h"
 #include "ExampleBrowser/OpenGLExampleBrowser.h"
 
+// Cf ExampleBrowser -> Deformable Body / Extreme Deformation
+// modify line 118 of file examples/DeformableDemo/LargeDeformation.cpp :
+// btSoftBody* psb = btSoftBodyHelpers::CreateFromVtkFile(getDeformableDynamicsWorld()->getWorldInfo(), "./tetra_cylinder_50_cm.vtk");
+// copy file tetra_cylinder_50_cm.vtk into build_cmake/examples/ExampleBrowser
+// then ./build_cmake_pybullet_double.sh 
+
 
 static btScalar sGripperClosingTargetVelocity = -0.7f;
 
@@ -86,6 +92,7 @@ int main(int argc, char* argv[])
 	b3RobotSimulatorLoadDeformableBodyArgs deformable_args(1, .01, 0.006);
 	btQuaternion q_cylinder = sim->getQuaternionFromEuler(btVector3(0.0, 1.57, 0.0));
 	btVector3 pos_cylinder(0.5,0.0,0.0);
+	/*
 	deformable_args.m_springElasticStiffness = 1;
 	deformable_args.m_springDampingStiffness = .01;
 	deformable_args.m_springBendingStiffness = .1;
@@ -93,6 +100,7 @@ int main(int argc, char* argv[])
 	deformable_args.m_useSelfCollision = false;
 	deformable_args.m_useFaceContact = true;
 	deformable_args.m_useBendingSprings = true;
+	* */
 	deformable_args.m_startPosition = pos_cylinder;
 	deformable_args.m_startOrientation = q_cylinder;
 	
