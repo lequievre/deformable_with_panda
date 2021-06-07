@@ -27,15 +27,10 @@
 #include "Utils/b3ResourcePath.h"
 
 ///The LargeDeformation shows the contact between volumetric deformable objects and rigid objects.
-static btScalar E = 50;
-static btScalar nu = 0.3;
-static btScalar damping_alpha = 0.1;
-static btScalar damping_beta = 0.01;
-
-struct TetraCube
-{
-#include "../SoftDemo/cube.inl"
-};
+static btScalar E = 50;  // Young's Modulus
+static btScalar nu = 0.3; // Poisson Ratio
+static btScalar damping_alpha = 0.1; // Mass Damping
+static btScalar damping_beta = 0.01; // Stiffness Damping
 
 class LargeDeformation : public CommonDeformableBodyBase
 {
@@ -56,11 +51,12 @@ public:
 
 	void resetCamera()
 	{
-        float dist = 20;
-        float pitch = -45;
-        float yaw = 100;
-        float targetPos[3] = {0, 3, 0};
-		m_guiHelper->resetCamera(dist, yaw, pitch, targetPos[0], targetPos[1], targetPos[2]);
+        double cameraDistance = 3;
+		double cameraPitch = -45;
+		double cameraYaw = 100;
+		double cameraTargetPos[3] = {0, 0, 0};
+	         
+		m_guiHelper->resetCamera(cameraDistance, cameraYaw, cameraPitch, cameraTargetPos[0], cameraTargetPos[1], cameraTargetPos[2]);
 	}
     
     void stepSimulation(float deltaTime)
@@ -106,24 +102,54 @@ void LargeDeformation::initPhysics()
 	m_solver = sol;
 
 	m_dynamicsWorld = new btDeformableMultiBodyDynamicsWorld(m_dispatcher, m_broadphase, sol, m_collisionConfiguration, deformableBodySolver);
+	btVector3 gravity = btVector3(0, -9.8, 0);
+    m_dynamicsWorld->setGravity(gravity);
+    getDeformableDynamicsWorld()->getWorldInfo().m_gravity = gravity;
+    getDeformableDynamicsWorld()->getWorldInfo().m_sparsesdf.setDefaultVoxelsz(0.25);
+	
+	
 	m_guiHelper->createPhysicsDebugDrawer(m_dynamicsWorld);
-
-    // create volumetric soft body
-    {
-		/*
-        btSoftBody* psb = btSoftBodyHelpers::CreateFromTetGenData(getDeformableDynamicsWorld()->getWorldInfo(),
-                                                                  TetraCube::getElements(),
-                                                                  0,
-                                                                  TetraCube::getNodes(),
-                                                                  false, true, true);
-        */
+	
+	{
+        ///create a ground
+        btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(150.), btScalar(1.0), btScalar(150.)));
+        groundShape->setMargin(0.02);
+        m_collisionShapes.push_back(groundShape);
         
+        btTransform groundTransform;
+        groundTransform.setIdentity();
+        groundTransform.setOrigin(btVector3(0, -1.15, 0));
+        groundTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0));
+        //We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
+        btScalar mass(0.);
+        
+        //rigidbody is dynamic if and only if mass is non zero, otherwise static
+        bool isDynamic = (mass != 0.f);
+        
+        btVector3 localInertia(0, 0, 0);
+        if (isDynamic)
+            groundShape->calculateLocalInertia(mass, localInertia);
+        
+        //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+        btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
+        btRigidBody* body = new btRigidBody(rbInfo);
+        body->setFriction(4);
+        
+        //add the ground to the dynamics world
+        m_dynamicsWorld->addRigidBody(body);
+    }
+	
+	
+	
+
+    // create volumetric soft body from a file named 'tetra_cylinder_50_cm.vtk' saved into 'data' directory
+    {
         btSoftBody* psb = btSoftBodyHelpers::CreateFromVtkFile(getDeformableDynamicsWorld()->getWorldInfo(), "data/tetra_cylinder_50_cm.vtk");
 
-        
         getDeformableDynamicsWorld()->addSoftBody(psb);
-        psb->scale(btVector3(2, 2, 2));
-        psb->translate(btVector3(0, 5, 0));
+        psb->scale(btVector3(1, 1, 1));
+        psb->translate(btVector3(0, 0, 0));
         psb->getCollisionShape()->setMargin(0.1);
         psb->setTotalMass(0.5);
         psb->m_cfg.kKHR = 1; // collision hardness with kinematic objects
@@ -132,19 +158,30 @@ void LargeDeformation::initPhysics()
         psb->m_cfg.collisions = btSoftBody::fCollision::SDF_RD;
         psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDN;
 		psb->m_sleepingThreshold = 0;
-        btSoftBodyHelpers::generateBoundaryFaces(psb);
+		
+		
+       /* btSoftBodyHelpers::generateBoundaryFaces(psb);
 		for (int i = 0; i < psb->m_nodes.size(); ++i)
 		{
 			for (int j = 0; j < 3; ++j)
 				psb->m_nodes[i].m_x[j] = ((double) 2*rand() / (RAND_MAX))-1.0;
 			psb->m_nodes[i].m_x[1]+=8;
-		}
+		}*/
         
-        btDeformableLinearElasticityForce* linearElasticity = new btDeformableLinearElasticityForce(100,100,0.01);
+        
+        // btDeformableLinearElasticityForce(btScalar mu, btScalar lambda, btScalar damping_alpha = 0.01, btScalar damping_beta = 0.01)
+        double init_mu = 100.0;
+        double init_lambda = 100.0;
+        double init_damping_alpha = 0.01;
+        double init_damping_beta = 0.01;
+        
+        btDeformableLinearElasticityForce* linearElasticity = new btDeformableLinearElasticityForce(init_mu,init_lambda,init_damping_alpha,init_damping_beta);
 		m_linearElasticity = linearElasticity;
         getDeformableDynamicsWorld()->addForce(psb, linearElasticity);
         m_forces.push_back(linearElasticity);
     }
+    
+    
     getDeformableDynamicsWorld()->setImplicit(true);
     getDeformableDynamicsWorld()->setLineSearch(false);
     getDeformableDynamicsWorld()->setUseProjection(true);
@@ -157,13 +194,18 @@ void LargeDeformation::initPhysics()
 	m_guiHelper->autogenerateGraphicsObjects(m_dynamicsWorld);
 	
     {
+		// https://fr.wikipedia.org/wiki/Coefficient_de_Lam%C3%A9
+		// https://fr.wikipedia.org/wiki/Module_de_Young
+		// Polyéthylène	0,2 à 0,7 GPa = 200000 à 700000 Pa
+		
         SliderParams slider("Young's Modulus", &E);
         slider.m_minVal = 0;
-        slider.m_maxVal = 2000;
+        slider.m_maxVal = 700000;
         if (m_guiHelper->getParameterInterface())
             m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
     }
     {
+		// https://fr.wikipedia.org/wiki/Coefficient_de_Poisson
         SliderParams slider("Poisson Ratio", &nu);
         slider.m_minVal = 0.05;
         slider.m_maxVal = 0.49;
