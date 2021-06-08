@@ -26,6 +26,8 @@
 #include "CommonInterfaces/CommonDeformableBodyBase.h"
 #include "Utils/b3ResourcePath.h"
 
+#include "RobotSimulator/b3RobotSimulatorClientAPI.h"
+
 ///The LargeDeformation shows the contact between volumetric deformable objects and rigid objects.
 static btScalar E = 50;  // Young's Modulus
 static btScalar nu = 0.3; // Poisson Ratio
@@ -35,6 +37,8 @@ static btScalar damping_beta = 0.01; // Stiffness Damping
 class LargeDeformation : public CommonDeformableBodyBase
 {
 	btDeformableLinearElasticityForce* m_linearElasticity;
+	b3RobotSimulatorClientAPI m_robotSim;
+	int m_pandaIndex;
 
 public:
 	LargeDeformation(struct GUIHelperInterface* helper)
@@ -48,6 +52,12 @@ public:
 	void initPhysics();
 
 	void exitPhysics();
+	
+	virtual bool keyboardCallback(int key, int state)
+	{
+		b3Printf("-> key = %d, state = %d", key, state);
+		return false;
+	};
 
 	void resetCamera()
 	{
@@ -61,9 +71,11 @@ public:
     
     void stepSimulation(float deltaTime)
     {
+		
 		m_linearElasticity->setPoissonRatio(nu);
 		m_linearElasticity->setYoungsModulus(E);
 		m_linearElasticity->setDamping(damping_alpha, damping_beta);
+		
         float internalTimeStep = 1. / 60.f;
         m_dynamicsWorld->stepSimulation(deltaTime, 1, internalTimeStep);
     }
@@ -84,6 +96,7 @@ public:
     }
 };
 
+
 void LargeDeformation::initPhysics()
 {
 	m_guiHelper->setUpAxis(1);
@@ -102,54 +115,43 @@ void LargeDeformation::initPhysics()
 	m_solver = sol;
 
 	m_dynamicsWorld = new btDeformableMultiBodyDynamicsWorld(m_dispatcher, m_broadphase, sol, m_collisionConfiguration, deformableBodySolver);
-	btVector3 gravity = btVector3(0, -9.8, 0);
-    m_dynamicsWorld->setGravity(gravity);
-    getDeformableDynamicsWorld()->getWorldInfo().m_gravity = gravity;
-    getDeformableDynamicsWorld()->getWorldInfo().m_sparsesdf.setDefaultVoxelsz(0.25);
 	
+	int mode = eCONNECT_EXISTING_EXAMPLE_BROWSER;
+	m_robotSim.setGuiHelper(m_guiHelper);
+	bool connected = m_robotSim.connect(mode);
+	m_robotSim.configureDebugVisualizer(COV_ENABLE_RGB_BUFFER_PREVIEW, 0);
+	m_robotSim.configureDebugVisualizer(COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0);
+	m_robotSim.configureDebugVisualizer(COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0);
+
+	//			0;//m_robotSim.connect(m_guiHelper);
+	b3Printf("robotSim connected = %d", connected);
+	
+	m_robotSim.setGravity(btVector3(0, 0, -9.8));
 	
 	m_guiHelper->createPhysicsDebugDrawer(m_dynamicsWorld);
 	
 	{
-        ///create a ground
-        btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(150.), btScalar(1.0), btScalar(150.)));
-        groundShape->setMargin(0.02);
-        m_collisionShapes.push_back(groundShape);
-        
-        btTransform groundTransform;
-        groundTransform.setIdentity();
-        groundTransform.setOrigin(btVector3(0, -1.15, 0));
-        groundTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0));
-        //We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
-        btScalar mass(0.);
-        
-        //rigidbody is dynamic if and only if mass is non zero, otherwise static
-        bool isDynamic = (mass != 0.f);
-        
-        btVector3 localInertia(0, 0, 0);
-        if (isDynamic)
-            groundShape->calculateLocalInertia(mass, localInertia);
-        
-        //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-        btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
-        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
-        btRigidBody* body = new btRigidBody(rbInfo);
-        body->setFriction(4);
-        
-        //add the ground to the dynamics world
-        m_dynamicsWorld->addRigidBody(body);
-    }
-	
-	
+				m_robotSim.loadURDF("urdf/plane.urdf");
+				
+	}
 	
 
     // create volumetric soft body from a file named 'tetra_cylinder_50_cm.vtk' saved into 'data' directory
     {
         btSoftBody* psb = btSoftBodyHelpers::CreateFromVtkFile(getDeformableDynamicsWorld()->getWorldInfo(), "data/tetra_cylinder_50_cm.vtk");
 
+        btTransform psbTransform;
+	    psbTransform.setIdentity();
+	    // btQuaternion(yaw, pitch, roll)
+	    // yaw = Z, pitch = Y, roll = X
+	    psbTransform.setRotation(btQuaternion(SIMD_PI / 2,0,0));
+
+
+
         getDeformableDynamicsWorld()->addSoftBody(psb);
         psb->scale(btVector3(1, 1, 1));
         psb->translate(btVector3(0, 0, 0));
+        psb->transform(psbTransform);
         psb->getCollisionShape()->setMargin(0.1);
         psb->setTotalMass(0.5);
         psb->m_cfg.kKHR = 1; // collision hardness with kinematic objects
@@ -158,16 +160,6 @@ void LargeDeformation::initPhysics()
         psb->m_cfg.collisions = btSoftBody::fCollision::SDF_RD;
         psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDN;
 		psb->m_sleepingThreshold = 0;
-		
-		
-       /* btSoftBodyHelpers::generateBoundaryFaces(psb);
-		for (int i = 0; i < psb->m_nodes.size(); ++i)
-		{
-			for (int j = 0; j < 3; ++j)
-				psb->m_nodes[i].m_x[j] = ((double) 2*rand() / (RAND_MAX))-1.0;
-			psb->m_nodes[i].m_x[1]+=8;
-		}*/
-        
         
         // btDeformableLinearElasticityForce(btScalar mu, btScalar lambda, btScalar damping_alpha = 0.01, btScalar damping_beta = 0.01)
         double init_mu = 100.0;
@@ -181,6 +173,17 @@ void LargeDeformation::initPhysics()
         m_forces.push_back(linearElasticity);
     }
     
+    {
+		//m_robotSim.loadURDF("urdf/kuka_iiwa/model.urdf");
+		b3RobotSimulatorLoadUrdfFileArgs args;
+		args.m_startPosition.setValue(-0.5, 0, 0);
+		args.m_startOrientation.setEulerZYX(0, 0, 0);
+		args.m_useMultiBody = false;
+		m_pandaIndex = m_robotSim.loadURDF("urdf/franka_panda/panda.urdf",args);
+		int numJoints = m_robotSim.getNumJoints(m_pandaIndex);
+		b3Printf("Num joints Panda = %d", numJoints);
+	}
+    
     
     getDeformableDynamicsWorld()->setImplicit(true);
     getDeformableDynamicsWorld()->setLineSearch(false);
@@ -192,6 +195,7 @@ void LargeDeformation::initPhysics()
     getDeformableDynamicsWorld()->getSolverInfo().m_numIterations = 100;
     // add a few rigid bodies
 	m_guiHelper->autogenerateGraphicsObjects(m_dynamicsWorld);
+	
 	
     {
 		// https://fr.wikipedia.org/wiki/Coefficient_de_Lam%C3%A9
@@ -226,34 +230,7 @@ void LargeDeformation::initPhysics()
         if (m_guiHelper->getParameterInterface())
             m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
     }
-//	{
-//		SliderParams slider("Young's Modulus", &E);
-//		slider.m_minVal = 0;
-//		slider.m_maxVal = 200;
-//		if (m_guiHelper->getParameterInterface())
-//			m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
-//	}
-//	{
-//		SliderParams slider("Poisson Ratio", &nu);
-//		slider.m_minVal = 0.05;
-//		slider.m_maxVal = 0.40;
-//		if (m_guiHelper->getParameterInterface())
-//			m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
-//	}
-//	{
-//		SliderParams slider("Mass Damping", &damping_alpha);
-//		slider.m_minVal = 0.001;
-//		slider.m_maxVal = 0.01;
-//		if (m_guiHelper->getParameterInterface())
-//			m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
-//	}
-//    {
-//        SliderParams slider("Stiffness Damping", &damping_beta);
-//        slider.m_minVal = 0.001;
-//        slider.m_maxVal = 0.01;
-//        if (m_guiHelper->getParameterInterface())
-//            m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
-//    }
+       
 }
 
 void LargeDeformation::exitPhysics()

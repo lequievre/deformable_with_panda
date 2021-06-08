@@ -61,6 +61,8 @@ SET(MyBrowser_SRCS
     main.cpp
 	ExampleEntries.cpp
 	LargeDeformation.cpp
+	${BULLET_ROOT}/examples/RobotSimulator/b3RobotSimulatorClientAPI.h
+	${BULLET_ROOT}/examples/RobotSimulator/b3RobotSimulatorClientAPI.cpp
 	#Importers/ImportBullet/SerializeSetup.cpp
 )
 
@@ -75,4 +77,11 @@ ADD_CUSTOM_COMMAND(
                 TARGET App_MyBrowser
                 POST_BUILD
                 COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory ${PROJECT_SOURCE_DIR}/data ${PROJECT_BINARY_DIR}/data
+        )
+        
+        
+ADD_CUSTOM_COMMAND(
+                TARGET App_MyBrowser
+                POST_BUILD
+                COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory ${PROJECT_SOURCE_DIR}/urdf ${PROJECT_BINARY_DIR}/urdf
         )
