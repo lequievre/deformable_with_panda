@@ -6,22 +6,10 @@
 #include "ExampleEntries.h"
 #include "Bullet3Common/b3Logging.h"
 
-/*
-#include "Importers/ImportObjDemo/ImportObjExample.h"
-#include "Importers/ImportBsp/ImportBspExample.h"
-#include "Importers/ImportColladaDemo/ImportColladaSetup.h"
-#include "Importers/ImportSTLDemo/ImportSTLSetup.h"
-#include "Importers/ImportURDFDemo/ImportURDFSetup.h"
-#include "Importers/ImportSDFDemo/ImportSDFSetup.h"
-#include "Importers/ImportSTLDemo/ImportSTLSetup.h"
-#include "Importers/ImportBullet/SerializeSetup.h"
-*/
-
 #include "LinearMath/btAlignedAllocator.h"
 
 static double gMinUpdateTimeMicroSecs = 1000.;
 
-static bool interrupted = false;
 static OpenGLExampleBrowser* sExampleBrowser = 0;
 
 
@@ -35,17 +23,10 @@ int main(int argc, char* argv[])
 		ExampleEntriesAll examples;
 		examples.initExampleEntries();
 	
-
-		OpenGLExampleBrowser* exampleBrowser = new OpenGLExampleBrowser(&examples);
-		sExampleBrowser = exampleBrowser;  //for <CTRL-C> etc, cleanup shared memory
-		bool init = exampleBrowser->init(argc, argv);
-		//exampleBrowser->registerFileImporter(".urdf", ImportURDFCreateFunc);
-		//exampleBrowser->registerFileImporter(".sdf", ImportSDFCreateFunc);
-		//exampleBrowser->registerFileImporter(".obj", ImportObjCreateFunc);
-		//exampleBrowser->registerFileImporter(".stl", ImportSTLCreateFunc);
-		//exampleBrowser->registerFileImporter(".bullet", SerializeBulletCreateFunc);
+		sExampleBrowser = new OpenGLExampleBrowser(&examples);
 		
-
+		bool init = sExampleBrowser->init(argc, argv);
+		
 		clock.reset();
 		if (init)
 		{
@@ -63,19 +44,14 @@ int main(int argc, char* argv[])
 				else
 				{
 					clock.reset();
-					exampleBrowser->update(deltaTimeInSeconds);
+					sExampleBrowser->update(deltaTimeInSeconds);
 				}
-			} while (!exampleBrowser->requestedExit() && !interrupted);
+			} while (!sExampleBrowser->requestedExit());
 		}
-		delete exampleBrowser;
+		
+		delete sExampleBrowser;
 		
 	}
-
-#ifdef BT_DEBUG_MEMORY_ALLOCATIONS
-	int numBytesLeaked = btDumpMemoryLeaks();
-	btAssert(numBytesLeaked == 0);
-#endif  //BT_DEBUG_MEMORY_ALLOCATIONS
-
     
 	return 0;
 }

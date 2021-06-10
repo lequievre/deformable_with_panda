@@ -29,16 +29,27 @@
 #include "RobotSimulator/b3RobotSimulatorClientAPI.h"
 
 ///The LargeDeformation shows the contact between volumetric deformable objects and rigid objects.
-static btScalar E = 50;  // Young's Modulus
-static btScalar nu = 0.3; // Poisson Ratio
-static btScalar damping_alpha = 0.1; // Mass Damping
-static btScalar damping_beta = 0.01; // Stiffness Damping
+
+
+// Frite de piscine fait en polyethylene moussé.
+// Le Module de Young du Polyéthylène est de 0.2 à 0.7 GPa soit 200000 à 700000 Pa.
+// https://www.simulationmateriaux.com/ComportementMecanique/comportement_mecanique_Liste_modules_de_Young.php
+// https://fr.wikipedia.org/wiki/Coefficient_de_Lam%C3%A9
+// https://fr.wikipedia.org/wiki/Module_de_Young
+
+static btScalar E = 200000;  // Young's Modulus
+static btScalar nu = 0.4; // Poisson Ratio
+static btScalar damping_alpha = 0; // Mass Damping = 0.1
+static btScalar damping_beta = 0; // Stiffness Damping = 0.01
+
+
 
 class LargeDeformation : public CommonDeformableBodyBase
 {
 	btDeformableLinearElasticityForce* m_linearElasticity;
 	b3RobotSimulatorClientAPI m_robotSim;
 	int m_pandaIndex;
+	btScalar panda_current_joints[8];
 
 public:
 	LargeDeformation(struct GUIHelperInterface* helper)
@@ -75,6 +86,22 @@ public:
 		m_linearElasticity->setPoissonRatio(nu);
 		m_linearElasticity->setYoungsModulus(E);
 		m_linearElasticity->setDamping(damping_alpha, damping_beta);
+		
+		
+		for (int i = 0; i < 7; i++)
+		{
+			b3RobotSimulatorJointMotorArgs controlArgs(CONTROL_MODE_POSITION_VELOCITY_PD);
+			controlArgs.m_targetPosition = panda_current_joints[i];
+			controlArgs.m_maxTorqueValue = 100;
+			controlArgs.m_kp = 1.0;
+			controlArgs.m_targetVelocity = 0;
+			controlArgs.m_kd = 1.0;
+			
+			m_robotSim.setJointMotorControl(m_pandaIndex, i, controlArgs);
+			
+		}
+		
+		
 		
         float internalTimeStep = 1. / 60.f;
         m_dynamicsWorld->stepSimulation(deltaTime, 1, internalTimeStep);
@@ -182,6 +209,40 @@ void LargeDeformation::initPhysics()
 		m_pandaIndex = m_robotSim.loadURDF("urdf/franka_panda/panda.urdf",args);
 		int numJoints = m_robotSim.getNumJoints(m_pandaIndex);
 		b3Printf("Num joints Panda = %d", numJoints);
+		
+		
+		b3JointStates2 current_jointStates;
+
+	    m_robotSim.getJointStates(m_pandaIndex, current_jointStates);
+	    
+	    for (int i = 0; i < 7; i++)
+		{
+			panda_current_joints[i] = current_jointStates.m_actualStateQ[i];
+		}
+		
+		
+		double jointLowerLimit;
+	    double jointUpperLimit;
+	    
+	    b3JointInfo jointInfo;
+	        
+		for (int i = 0; i < 7; i++)
+		{
+			m_robotSim.getJointInfo(m_pandaIndex, i, &jointInfo);
+			b3Printf("joint[%d].m_jointName=%s", i, jointInfo.m_jointName);
+			b3Printf("m_jointIndex = %i", jointInfo.m_jointIndex);
+			
+			jointLowerLimit = jointInfo.m_jointLowerLimit;
+			jointUpperLimit = jointInfo.m_jointUpperLimit;
+			
+			{
+			  SliderParams slider(jointInfo.m_jointName, panda_current_joints + i);
+			  slider.m_minVal = jointLowerLimit;
+			  slider.m_maxVal = jointUpperLimit;
+			  if (m_guiHelper->getParameterInterface())
+					m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
+		    }
+		}
 	}
     
     
@@ -198,9 +259,6 @@ void LargeDeformation::initPhysics()
 	
 	
     {
-		// https://fr.wikipedia.org/wiki/Coefficient_de_Lam%C3%A9
-		// https://fr.wikipedia.org/wiki/Module_de_Young
-		// Polyéthylène	0,2 à 0,7 GPa = 200000 à 700000 Pa
 		
         SliderParams slider("Young's Modulus", &E);
         slider.m_minVal = 0;
