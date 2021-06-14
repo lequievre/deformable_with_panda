@@ -26,7 +26,11 @@
 #include "CommonInterfaces/CommonDeformableBodyBase.h"
 #include "Utils/b3ResourcePath.h"
 
-#include "RobotSimulator/b3RobotSimulatorClientAPI.h"
+#include "Importers/ImportURDFDemo/BulletUrdfImporter.h"
+#include "Importers/ImportURDFDemo/URDF2Bullet.h"
+#include "Importers/ImportURDFDemo/MyMultiBodyCreator.h"
+
+
 
 ///The LargeDeformation shows the contact between volumetric deformable objects and rigid objects.
 
@@ -47,15 +51,16 @@ static btScalar damping_beta = 0; // Stiffness Damping = 0.01
 class LargeDeformation : public CommonDeformableBodyBase
 {
 	btDeformableLinearElasticityForce* m_linearElasticity;
-	b3RobotSimulatorClientAPI m_robotSim;
-	int m_pandaIndex;
-	btScalar panda_current_joints[8];
+	btDeformableNeoHookeanForce* m_neohookean;
+	btMultiBody* m_multiBody;
+	
 
 public:
 	LargeDeformation(struct GUIHelperInterface* helper)
 		: CommonDeformableBodyBase(helper)
 	{
         m_linearElasticity = 0;
+        m_neohookean = 0;
 	}
 	virtual ~LargeDeformation()
 	{
@@ -82,24 +87,16 @@ public:
     
     void stepSimulation(float deltaTime)
     {
-		
+	
 		m_linearElasticity->setPoissonRatio(nu);
 		m_linearElasticity->setYoungsModulus(E);
 		m_linearElasticity->setDamping(damping_alpha, damping_beta);
 		
 		
-		for (int i = 0; i < 7; i++)
-		{
-			b3RobotSimulatorJointMotorArgs controlArgs(CONTROL_MODE_POSITION_VELOCITY_PD);
-			controlArgs.m_targetPosition = panda_current_joints[i];
-			controlArgs.m_maxTorqueValue = 100;
-			controlArgs.m_kp = 1.0;
-			controlArgs.m_targetVelocity = 0;
-			controlArgs.m_kd = 1.0;
-			
-			m_robotSim.setJointMotorControl(m_pandaIndex, i, controlArgs);
-			
-		}
+		/*
+		m_neohookean->setPoissonRatio(nu);
+		m_neohookean->setYoungsModulus(E);
+		*/
 		
 		
 		
@@ -126,7 +123,16 @@ public:
 
 void LargeDeformation::initPhysics()
 {
-	m_guiHelper->setUpAxis(1);
+	//roboticists like Z up
+	int upAxis = 2;
+	m_guiHelper->setUpAxis(upAxis);
+
+	createEmptyDynamicsWorld();
+	btVector3 gravity(0, 0, 0);
+	gravity[upAxis]=-9.8;
+	m_dynamicsWorld->setGravity(gravity);
+	
+	
 
 	///collision configuration contains default setup for memory, collision setup
     m_collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();
@@ -143,25 +149,47 @@ void LargeDeformation::initPhysics()
 
 	m_dynamicsWorld = new btDeformableMultiBodyDynamicsWorld(m_dispatcher, m_broadphase, sol, m_collisionConfiguration, deformableBodySolver);
 	
-	int mode = eCONNECT_EXISTING_EXAMPLE_BROWSER;
-	m_robotSim.setGuiHelper(m_guiHelper);
-	bool connected = m_robotSim.connect(mode);
-	m_robotSim.configureDebugVisualizer(COV_ENABLE_RGB_BUFFER_PREVIEW, 0);
-	m_robotSim.configureDebugVisualizer(COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0);
-	m_robotSim.configureDebugVisualizer(COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0);
-
-	//			0;//m_robotSim.connect(m_guiHelper);
-	b3Printf("robotSim connected = %d", connected);
 	
-	m_robotSim.setGravity(btVector3(0, 0, -9.8));
+	m_dynamicsWorld->setGravity(gravity);
+    getDeformableDynamicsWorld()->getWorldInfo().m_gravity = gravity;
+    getDeformableDynamicsWorld()->getWorldInfo().m_sparsesdf.setDefaultVoxelsz(0.25);
+	getDeformableDynamicsWorld()->getWorldInfo().m_sparsesdf.Reset();
 	
 	m_guiHelper->createPhysicsDebugDrawer(m_dynamicsWorld);
 	
-	{
-				m_robotSim.loadURDF("urdf/plane.urdf");
-				
-	}
+    {
+		
+		// The btBoxShape is a box primitive around the origin, its sides axis aligned with length specified by half extents, in local shape coordinates.
+        ///create a ground
+        btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(150.), btScalar(150.), btScalar(1.0)));
+        groundShape->setMargin(0.02);
+        m_collisionShapes.push_back(groundShape);
+        
+        btTransform groundTransform;
+        groundTransform.setIdentity();
+        groundTransform.setOrigin(btVector3(0, 0, -1.15));
+        //groundTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0));
+        //We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
+        btScalar mass(0.);
+        
+        //rigidbody is dynamic if and only if mass is non zero, otherwise static
+        bool isDynamic = (mass != 0.f);
+        
+        btVector3 localInertia(0, 0, 0);
+        if (isDynamic)
+            groundShape->calculateLocalInertia(mass, localInertia);
+        
+        //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+        btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
+        btRigidBody* body = new btRigidBody(rbInfo);
+        body->setFriction(4);
+        
+        //add the ground to the dynamics world
+        m_dynamicsWorld->addRigidBody(body);
+    }
 	
+
 
     // create volumetric soft body from a file named 'tetra_cylinder_50_cm.vtk' saved into 'data' directory
     {
@@ -172,8 +200,7 @@ void LargeDeformation::initPhysics()
 	    // btQuaternion(yaw, pitch, roll)
 	    // yaw = Z, pitch = Y, roll = X
 	    psbTransform.setRotation(btQuaternion(SIMD_PI / 2,0,0));
-
-
+		psbTransform.setOrigin(btVector3(1.5,0,0));
 
         getDeformableDynamicsWorld()->addSoftBody(psb);
         psb->scale(btVector3(1, 1, 1));
@@ -186,6 +213,13 @@ void LargeDeformation::initPhysics()
 		psb->m_cfg.kDF = 0.5;
         psb->m_cfg.collisions = btSoftBody::fCollision::SDF_RD;
         psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDN;
+        
+        /* Explode with this parameters :
+        psb->m_cfg.collisions = btSoftBody::fCollision::SDF_RD;
+        psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDF;
+        psb->m_cfg.collisions |= btSoftBody::fCollision::VF_DD;
+        * */
+        
 		psb->m_sleepingThreshold = 0;
         
         // btDeformableLinearElasticityForce(btScalar mu, btScalar lambda, btScalar damping_alpha = 0.01, btScalar damping_beta = 0.01)
@@ -194,56 +228,35 @@ void LargeDeformation::initPhysics()
         double init_damping_alpha = 0.01;
         double init_damping_beta = 0.01;
         
+        /*
+         * Explosion with this :
+        btDeformableNeoHookeanForce* neohookean = new btDeformableNeoHookeanForce(20,80,.01);
+        getDeformableDynamicsWorld()->addForce(psb, neohookean);
+        m_neohookean = neohookean;
+        m_forces.push_back(neohookean);
+        * */
+        
         btDeformableLinearElasticityForce* linearElasticity = new btDeformableLinearElasticityForce(init_mu,init_lambda,init_damping_alpha,init_damping_beta);
 		m_linearElasticity = linearElasticity;
         getDeformableDynamicsWorld()->addForce(psb, linearElasticity);
         m_forces.push_back(linearElasticity);
+        
+        
+       /* 
+        btDeformableMassSpringForce* mass_spring = new btDeformableMassSpringForce(10,1, true);
+        getDeformableDynamicsWorld()->addForce(psb, mass_spring);
+        m_forces.push_back(mass_spring);*/
+        
+        btDeformableGravityForce* gravity_force =  new btDeformableGravityForce(gravity);
+        getDeformableDynamicsWorld()->addForce(psb, gravity_force);
+        m_forces.push_back(gravity_force);
+        
+        
+       
+        
+        
+         
     }
-    
-    {
-		//m_robotSim.loadURDF("urdf/kuka_iiwa/model.urdf");
-		b3RobotSimulatorLoadUrdfFileArgs args;
-		args.m_startPosition.setValue(-0.5, 0, 0);
-		args.m_startOrientation.setEulerZYX(0, 0, 0);
-		args.m_useMultiBody = false;
-		m_pandaIndex = m_robotSim.loadURDF("urdf/franka_panda/panda.urdf",args);
-		int numJoints = m_robotSim.getNumJoints(m_pandaIndex);
-		b3Printf("Num joints Panda = %d", numJoints);
-		
-		
-		b3JointStates2 current_jointStates;
-
-	    m_robotSim.getJointStates(m_pandaIndex, current_jointStates);
-	    
-	    for (int i = 0; i < 7; i++)
-		{
-			panda_current_joints[i] = current_jointStates.m_actualStateQ[i];
-		}
-		
-		
-		double jointLowerLimit;
-	    double jointUpperLimit;
-	    
-	    b3JointInfo jointInfo;
-	        
-		for (int i = 0; i < 7; i++)
-		{
-			m_robotSim.getJointInfo(m_pandaIndex, i, &jointInfo);
-			b3Printf("joint[%d].m_jointName=%s", i, jointInfo.m_jointName);
-			b3Printf("m_jointIndex = %i", jointInfo.m_jointIndex);
-			
-			jointLowerLimit = jointInfo.m_jointLowerLimit;
-			jointUpperLimit = jointInfo.m_jointUpperLimit;
-			
-			{
-			  SliderParams slider(jointInfo.m_jointName, panda_current_joints + i);
-			  slider.m_minVal = jointLowerLimit;
-			  slider.m_maxVal = jointUpperLimit;
-			  if (m_guiHelper->getParameterInterface())
-					m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
-		    }
-		}
-	}
     
     
     getDeformableDynamicsWorld()->setImplicit(true);
@@ -255,7 +268,7 @@ void LargeDeformation::initPhysics()
     getDeformableDynamicsWorld()->getSolverInfo().m_splitImpulse = true;
     getDeformableDynamicsWorld()->getSolverInfo().m_numIterations = 100;
     // add a few rigid bodies
-	m_guiHelper->autogenerateGraphicsObjects(m_dynamicsWorld);
+	
 	
 	
     {
@@ -288,6 +301,43 @@ void LargeDeformation::initPhysics()
         if (m_guiHelper->getParameterInterface())
             m_guiHelper->getParameterInterface()->registerSliderFloatParameter(slider);
     }
+    
+
+    
+    
+    BulletURDFImporter u2b(m_guiHelper, 0, 0, 1, 0);
+	bool loadOk = u2b.loadURDF("urdf/franka_panda/panda.urdf");  // lwr / kuka.urdf");
+	if (loadOk)
+	{
+		int rootLinkIndex = u2b.getRootLinkIndex();
+		b3Printf("urdf root link index = %d\n", rootLinkIndex);
+		MyMultiBodyCreator creation(m_guiHelper);
+		btTransform identityTrans;
+		identityTrans.setIdentity();
+		identityTrans.setOrigin(btVector3(0, 0, 0));
+		
+		ConvertURDF2Bullet(u2b, creation, identityTrans, m_dynamicsWorld, true, u2b.getPathPrefix());
+		for (int i = 0; i < u2b.getNumAllocatedCollisionShapes(); i++)
+		{
+			m_collisionShapes.push_back(u2b.getAllocatedCollisionShape(i));
+		}
+		m_multiBody = creation.getBulletMultiBody();
+		
+		if (m_multiBody)
+		{
+			//kuka without joint control/constraints will gain energy explode soon due to timestep/integrator
+			//temporarily set some extreme damping factors until we have some joint control or constraints
+			m_multiBody->setAngularDamping(0 * 0.99);
+			m_multiBody->setLinearDamping(0 * 0.99);
+			b3Printf("Root link name = %s", u2b.getLinkName(u2b.getRootLinkIndex()).c_str());
+		}
+	}
+	else
+	{
+		b3Printf("Impossible to load Panda URDF !!");
+	}
+	
+	m_guiHelper->autogenerateGraphicsObjects(m_dynamicsWorld);
        
 }
 
