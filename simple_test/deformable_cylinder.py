@@ -46,7 +46,8 @@ os.sys.path.insert(0, directory_name)
 
 physics_client_id = p.connect(p.GUI)
 
-p.setTimeStep(timeStep=1./240, physicsClientId=physics_client_id)
+#p.setTimeStep(timeStep=1./240, physicsClientId=physics_client_id)
+p.setTimeStep(0.001, physicsClientId = physics_client_id)
 
 pybullet_data_path = pybullet_data.getDataPath()
 print("pybullet_data_path = ", pybullet_data_path)
@@ -78,7 +79,23 @@ flags = p.URDF_USE_SELF_COLLISION
 
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 2.0, collisionMargin = 0.01, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 200, frictionCoeff=50, useSelfCollision = 1, repulsionStiffness = 800)
 
-cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 4, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 0.1, useSelfCollision = 1, frictionCoeff = 0.50, collisionMargin = 0.001)
+#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 4, useNeoHookean = 1, NeoHookeanMu = 6000, NeoHookeanLambda = 6000, NeoHookeanDamping = 0.1, useSelfCollision = 1, frictionCoeff = 0.50, collisionMargin = 0.001)
+
+
+# after reading code c++
+# m_E = 200000
+# m_nu = 0.4
+
+# m_mu = m_E * 0.5 / (1 + m_nu);  ou 0.07
+# m_lambda = m_E * m_nu / ((1 + m_nu) * (1 - 2 * m_nu)); ou 0.28
+
+# m_mu = 	200000 * 0.5 / (1 + 0.4) = 100000 / 1.4 = 71428,571428571
+# m_lambda = 200000 * 0.4 / ((1 + 0.4) * (1 - 2 * 0.4)) = 80000 / (1.4 * 0.2) = 80000 / 0.28 = 285714,285714286
+
+#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_50_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 0.2, useNeoHookean = 1, NeoHookeanMu = 71428, NeoHookeanLambda = 285714, NeoHookeanDamping = 0.01, useSelfCollision = 1, frictionCoeff = 0.50, collisionMargin = 0.001)
+#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_5_cm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, scale = 1.0, mass = 3, useNeoHookean = 1, NeoHookeanMu = 71428, NeoHookeanLambda = 285714, NeoHookeanDamping = 0.01, collisionMargin = 0.006, useSelfCollision = 1, frictionCoeff = 0.5, repulsionStiffness = 800)
+
+cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_2_5_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.02, useNeoHookean = 1, NeoHookeanMu = 96.2, NeoHookeanLambda = 144.2, NeoHookeanDamping =0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
 
 
 #cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder)

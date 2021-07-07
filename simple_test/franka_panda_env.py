@@ -92,7 +92,7 @@ class PandaEnv:
         self._end_eff_euler_lim = [[-m.pi, m.pi], [-m.pi, m.pi], [-m.pi, m.pi]]  # euler limit
 
         # effector index : i=7, name=panda_joint8, type=JOINT FIXED, lower=0.0, upper=-1.0, effort=0.0, velocity=0.0
-        self.end_eff_idx = 7
+        self.end_eff_idx = 8
 
         # Pybullet id of robot franka panda loaded
         self.robot_id = None
@@ -151,20 +151,40 @@ class PandaEnv:
         self.list_lower_limits, self.list_upper_limits, self.list_ranges, self.list_rest_pos = self.get_joint_ranges()
 
 
-    def show_sliders(self, prefix_name = ''):
+    def show_sliders(self, prefix_name = '', joint_values=None):
 
         index = 0
         for item in self._joint_name_to_index.items():
             joint_name = item[0]
-            joint_index = item[1]
-            ll = self.list_lower_limits[index]
-            ul = self.list_upper_limits[index]
-            joint_value = self._joint_initial_position[joint_name]
-            slider = p.addUserDebugParameter(prefix_name + joint_name, ll, ul, joint_value) # add a slider for that joint with the limits
-            self._joint_name_to_slider[joint_name] = slider
+            if (joint_name != 'panda_finger_joint1' and joint_name != 'panda_finger_joint2'):
+              joint_index = item[1]
+              ll = self.list_lower_limits[index]
+              ul = self.list_upper_limits[index]
+              if joint_values != None:
+                 joint_value = joint_values[index]
+              else:   
+                 joint_value = self._joint_initial_position[joint_name]
+              slider = p.addUserDebugParameter(prefix_name + joint_name, ll, ul, joint_value) # add a slider for that joint with the limits
+              self._joint_name_to_slider[joint_name] = slider
             index = index + 1
 
-
+    
+    def close_gripper(self):
+        id_finger_joint1  = self._joint_name_to_index['panda_finger_joint1']
+        id_finger_joint2  = self._joint_name_to_index['panda_finger_joint2']
+		
+        p.setJointMotorControl2(self.robot_id, id_finger_joint1, 
+                                p.POSITION_CONTROL,targetPosition=0.01, force=500,
+                                positionGain=0.5,
+                                velocityGain=0.5,
+                                physicsClientId=self._physics_client_id)
+                                
+        p.setJointMotorControl2(self.robot_id, id_finger_joint2 , 
+                                p.POSITION_CONTROL,targetPosition=0.01, force=500,
+                                positionGain=0.5,
+                                velocityGain=0.5,
+                                physicsClientId=self._physics_client_id)
+		    
     def apply_sliders(self):
         for joint_name in self._joint_name_to_slider.keys():
             slider = self._joint_name_to_slider[joint_name] # get the slider of that joint name
@@ -205,6 +225,7 @@ class PandaEnv:
             list_rest_poses.append(a_rest_pose)
 
         return list_lower_limits, list_upper_limits, list_joint_ranges, list_rest_poses
+            
 
     def get_observation(self):
         # Create observation state
@@ -260,17 +281,28 @@ class PandaEnv:
         assert len(action) == self.joint_action_space, ('number of motor commands differs from number of motor to control', len(action))
 
         joint_idxs = tuple(self._joint_name_to_index.values())
+        print("joint idxs = ", joint_idxs)
 
         for i, val in enumerate(action):
+            
+            
+            #joint_index = self._joint_name_to_index[joint_name]
+            
+            
             motor = joint_idxs[i]
-            new_motor_pos = min(self.list_upper_limits[i], max(self.list_lower_limits[i], val))
+            print("i=",i," val = ", val, " motor = ", motor)
+           
+            #new_motor_pos = min(self.list_upper_limits[i], max(self.list_lower_limits[i], val))
+            new_motor_pos = val
 
             p.setJointMotorControl2(self.robot_id,
                                     motor,
                                     p.POSITION_CONTROL,
                                     targetPosition=new_motor_pos,
-                                    positionGain=0.5, velocityGain=1.0,
+                                    positionGain=0.2, velocityGain=1.0,
                                     physicsClientId=self._physics_client_id)
+                                    
+            p.stepSimulation(physicsClientId=self._physics_client_id)
 
     def debug_gui(self):
 
