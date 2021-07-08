@@ -64,28 +64,26 @@ base_position_cylinder = [-0.75,0.0,0.0]
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_1_25_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.02, useNeoHookean = 1, NeoHookeanMu = 85.0, NeoHookeanLambda = 130.0, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.8)
 
 print("load URDF -> deformable_object/frite/frite.urdf")
-cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", base_position_cylinder, base_orientation_cylinder)
+cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", base_position_cylinder, base_orientation_cylinder, flags=p.URDF_USE_SELF_COLLISION)
 
 #p.setPhysicsEngineParameter(fixedTimeStep = 0.001, physicsClientId = physics_client_id, numSolverIterations = 200, useSplitImpulse = 1, erp = 0.1, solverResidualThreshold = 0.001, sparseSdfVoxelSize = 0.25)
+#p.setTimeStep(1/240, physicsClientId = physics_client_id)
+# 1/240 = 0.0041.. semble fonctionner !
+
 p.setTimeStep(0.001, physicsClientId = physics_client_id)
-#p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
+p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
 
 texUid = p.loadTexture("deformable_object/texture/texture_frite.png")
 p.changeVisualShape(cylinderId, -1, textureUniqueId=texUid)
-
 
 for i in range(10):
 	p.stepSimulation(physicsClientId=physics_client_id) 
 
 
-
-
 data = p.getMeshData(cylinderId, -1, flags=p.MESH_DATA_SIMULATION_MESH)
-
 
 #p.createSoftBodyAnchor(cylinderId ,0,franka_right.robot_id,-1, [0.0,0.0,0])
 #p.createSoftBodyAnchor(cylinderId ,1,franka_right.robot_id,-1, [0.0,0.0,0])
-
 
 # n° 56 right
 # n°4 left
