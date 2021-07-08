@@ -61,11 +61,14 @@ base_position_cylinder = [-0.75,0.0,0.0]
 # Load deformable object
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_2_5_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.02, useNeoHookean = 1, NeoHookeanMu = 96.1, NeoHookeanLambda = 144.2, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
 
-cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_1_25_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.02, useNeoHookean = 1, NeoHookeanMu = 85.0, NeoHookeanLambda = 130.0, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.8)
+#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_1_25_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.02, useNeoHookean = 1, NeoHookeanMu = 85.0, NeoHookeanLambda = 130.0, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.8)
 
+print("load URDF -> deformable_object/frite/frite.urdf")
+cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", base_position_cylinder, base_orientation_cylinder)
 
 #p.setPhysicsEngineParameter(fixedTimeStep = 0.001, physicsClientId = physics_client_id, numSolverIterations = 200, useSplitImpulse = 1, erp = 0.1, solverResidualThreshold = 0.001, sparseSdfVoxelSize = 0.25)
 p.setTimeStep(0.001, physicsClientId = physics_client_id)
+#p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
 
 texUid = p.loadTexture("deformable_object/texture/texture_frite.png")
 p.changeVisualShape(cylinderId, -1, textureUniqueId=texUid)
@@ -132,6 +135,7 @@ print("position left = ",data[1][5])
   print(data[0])
   print(data[1])
   """
+
 """
 text_uid = []
 for i in range(data[0]):
@@ -163,6 +167,11 @@ while True:
     if 112 in keys: # Grasp the object by using force (with letter 'p' = 112) for right gripper
       franka_right.close_gripper()
       
+    if 110 in keys: # 'n' to move joint 2
+      #franka_left.move_joint_2()
+      print("create anchors")
+      p.createSoftBodyAnchor(cylinderId, 5, franka_left.robot_id , 9)
+      p.createSoftBodyAnchor(cylinderId, 69, franka_right.robot_id , 9)
       
     p.stepSimulation(physicsClientId=physics_client_id)  
     

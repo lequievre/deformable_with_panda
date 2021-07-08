@@ -184,7 +184,24 @@ class PandaEnv:
                                 positionGain=0.5,
                                 velocityGain=0.5,
                                 physicsClientId=self._physics_client_id)
-		    
+	
+    def move_joint_2(self):
+		
+        joint_2_name = 'panda_joint2'
+        joint_2_index = self._joint_name_to_index[joint_2_name]
+        slider_joint_2 = self._joint_name_to_slider[joint_2_name] # get the slider of that joint name
+        slider_joint_2_value = p.readUserDebugParameter(slider_joint_2) # read the slider value
+		
+        for i in range(10):
+           slider_joint_2_value += 0.01
+			
+           p.setJointMotorControl2(self.robot_id, joint_2_index, p.POSITION_CONTROL,
+                                        targetPosition=slider_joint_2_value,
+                                        positionGain=0.2, velocityGain=0.2,
+                                        physicsClientId=self._physics_client_id)
+                                        
+           p.stepSimulation(physicsClientId=self._physics_client_id)
+			   
     def apply_sliders(self):
         for joint_name in self._joint_name_to_slider.keys():
             slider = self._joint_name_to_slider[joint_name] # get the slider of that joint name
