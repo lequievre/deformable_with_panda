@@ -61,17 +61,29 @@ base_position_cylinder = [-0.75,0.0,0.0]
 # Load deformable object
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_2_5_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.02, useNeoHookean = 1, NeoHookeanMu = 96.1, NeoHookeanLambda = 144.2, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
 
-#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_1_25_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.02, useNeoHookean = 1, NeoHookeanMu = 85.0, NeoHookeanLambda = 130.0, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.8)
+cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_1_25_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.2, useNeoHookean = 1, NeoHookeanMu = 96150, NeoHookeanLambda = 144230, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
 
-print("load URDF -> deformable_object/frite/frite.urdf")
-cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", base_position_cylinder, base_orientation_cylinder, flags=p.URDF_USE_SELF_COLLISION)
+#print("load URDF -> deformable_object/frite/frite.urdf")
+#cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", base_position_cylinder, base_orientation_cylinder, flags=p.URDF_USE_SELF_COLLISION)
 
-#p.setPhysicsEngineParameter(fixedTimeStep = 0.001, physicsClientId = physics_client_id, numSolverIterations = 200, useSplitImpulse = 1, erp = 0.1, solverResidualThreshold = 0.001, sparseSdfVoxelSize = 0.25)
+p.setPhysicsEngineParameter(fixedTimeStep = 0.0001, physicsClientId = physics_client_id, numSolverIterations = 500, useSplitImpulse = 1, erp = 0.1, solverResidualThreshold = 0.001, sparseSdfVoxelSize = 0.25)
 #p.setTimeStep(1/240, physicsClientId = physics_client_id)
 # 1/240 = 0.0041.. semble fonctionner !
 
-p.setTimeStep(0.001, physicsClientId = physics_client_id)
-p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
+
+# Version du 13_07 multiplee par 10
+#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_1_25_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.2, useNeoHookean = 1, NeoHookeanMu = 96150, NeoHookeanLambda = 144230, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
+#p.setPhysicsEngineParameter(fixedTimeStep = 0.0001, physicsClientId = physics_client_id, numSolverIterations = 500, useSplitImpulse = 1, erp = 0.1, solverResidualThreshold = 0.001, sparseSdfVoxelSize = 0.25)
+
+# version c++
+#cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_1_25_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.2, useNeoHookean = 1, NeoHookeanMu = 9615, NeoHookeanLambda = 14423, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
+#p.setPhysicsEngineParameter(fixedTimeStep = 0.001, physicsClientId = physics_client_id, numSolverIterations = 500, useSplitImpulse = 1, erp = 0.1, solverResidualThreshold = 0.001, sparseSdfVoxelSize = 0.25)
+
+
+
+
+#p.setTimeStep(0.001, physicsClientId = physics_client_id)
+#p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
 
 texUid = p.loadTexture("deformable_object/texture/texture_frite.png")
 p.changeVisualShape(cylinderId, -1, textureUniqueId=texUid)

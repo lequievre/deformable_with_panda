@@ -174,13 +174,13 @@ class PandaEnv:
         id_finger_joint2  = self._joint_name_to_index['panda_finger_joint2']
 		
         p.setJointMotorControl2(self.robot_id, id_finger_joint1, 
-                                p.POSITION_CONTROL,targetPosition=0.01, force=500,
+                                p.POSITION_CONTROL,targetPosition=0.02, force=500,
                                 positionGain=0.5,
                                 velocityGain=0.5,
                                 physicsClientId=self._physics_client_id)
                                 
         p.setJointMotorControl2(self.robot_id, id_finger_joint2 , 
-                                p.POSITION_CONTROL,targetPosition=0.01, force=500,
+                                p.POSITION_CONTROL,targetPosition=0.02, force=500,
                                 positionGain=0.5,
                                 velocityGain=0.5,
                                 physicsClientId=self._physics_client_id)
