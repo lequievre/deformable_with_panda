@@ -44,7 +44,7 @@ p.setGravity(0, 0, -10)
 
 p.resetDebugVisualizerCamera(2.5, 90, -60, [0.52, -0.2, -0.33], physicsClientId=physics_client_id)
 
-franka_left = PandaEnv(physics_client_id, base_position=(-1.4, 0.0, 0.0))
+franka_left = PandaEnv(physics_client_id, base_position=(-1.2, 0.0, 0.0))
 
 #franka_left.debug_gui()
 
@@ -61,12 +61,12 @@ base_position_cylinder = [-0.75,0.0,0.0]
 # Load deformable object
 #cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_2_5_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.02, useNeoHookean = 1, NeoHookeanMu = 96.1, NeoHookeanLambda = 144.2, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
 
-cylinderId = p.loadSoftBody("deformable_object/tetra_cylinder_1_25_mm.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.2, useNeoHookean = 1, NeoHookeanMu = 96150, NeoHookeanLambda = 144230, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
+cylinderId = p.loadSoftBody("deformable_object/tetgen/tetra_cylinder_16.vtk", basePosition = base_position_cylinder, baseOrientation=base_orientation_cylinder, mass = 0.2, useNeoHookean = 1, NeoHookeanMu = 96150, NeoHookeanLambda = 144230, NeoHookeanDamping = 0.01, useSelfCollision = 1, collisionMargin = 0.001, frictionCoeff = 0.5)
 
 #print("load URDF -> deformable_object/frite/frite.urdf")
 #cylinderId = p.loadURDF("deformable_object/frite/frite.urdf", base_position_cylinder, base_orientation_cylinder, flags=p.URDF_USE_SELF_COLLISION)
 
-p.setPhysicsEngineParameter(fixedTimeStep = 0.0001, physicsClientId = physics_client_id, numSolverIterations = 500, useSplitImpulse = 1, erp = 0.1, solverResidualThreshold = 0.001, sparseSdfVoxelSize = 0.25)
+p.setPhysicsEngineParameter(fixedTimeStep = 0.0003, physicsClientId = physics_client_id, numSolverIterations = 500, useSplitImpulse = 1, erp = 0.1, solverResidualThreshold = 0.001, sparseSdfVoxelSize = 0.25)
 #p.setTimeStep(1/240, physicsClientId = physics_client_id)
 # 1/240 = 0.0041.. semble fonctionner !
 
@@ -85,8 +85,10 @@ p.setPhysicsEngineParameter(fixedTimeStep = 0.0001, physicsClientId = physics_cl
 #p.setTimeStep(0.001, physicsClientId = physics_client_id)
 #p.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25)
 
-texUid = p.loadTexture("deformable_object/texture/texture_frite.png")
-p.changeVisualShape(cylinderId, -1, textureUniqueId=texUid)
+
+# Texture
+#texUid = p.loadTexture("deformable_object/texture/texture_frite.png")
+#p.changeVisualShape(cylinderId, -1, textureUniqueId=texUid)
 
 for i in range(10):
 	p.stepSimulation(physicsClientId=physics_client_id) 
@@ -99,12 +101,14 @@ data = p.getMeshData(cylinderId, -1, flags=p.MESH_DATA_SIMULATION_MESH)
 
 # n° 56 right
 # n°4 left
-pose_cylinder_right = list(data[1][65])  # n° 65 right
-pose_cylinder_right[2]+=0.05
+pose_cylinder_right = list(data[1][527])  # n° 527 right
+pose_cylinder_right[2]+=0.07
 #pose_cylinder_right[0]-=0.08
-pose_cylinder_left = list(data[1][5]) # n°5 left
-pose_cylinder_left[2]+=0.06
-pose_cylinder_left[0]+=0.08
+pose_cylinder_left = list(data[1][112]) # n°112 left
+pose_cylinder_left[2]+=0.07
+pose_cylinder_left[1]-=0.01
+
+#pose_cylinder_left[0]+=0.08
 
 """
 pose_cylinder_right = list(data[1][0])  # n° 56 right
@@ -118,16 +122,7 @@ uid_right = p.addUserDebugText("*", pose_cylinder_right, textColorRGB=[0,0,0])
 uid_left = p.addUserDebugText("*", pose_cylinder_left, textColorRGB=[0,0,0])
 
 jointPoses_right = p.calculateInverseKinematics(franka_right.robot_id, franka_right.end_eff_idx, pose_cylinder_right)
-
-
-#franka_right.apply_action(jointPoses_right[0:7])
-#p.stepSimulation(physicsClientId=physics_client_id)
-
-jointPoses_left = p.calculateInverseKinematics(franka_left.robot_id, franka_left.end_eff_idx, pose_cylinder_left, franka_left.list_lower_limits, franka_left.list_upper_limits, franka_left.list_ranges, franka_left.list_rest_pos)
-
-#franka_left.apply_action(jointPoses_left[0:7])
-#p.stepSimulation(physicsClientId=physics_client_id)
-
+jointPoses_left = p.calculateInverseKinematics(franka_left.robot_id, franka_left.end_eff_idx, pose_cylinder_left)
 franka_left.show_sliders(prefix_name='left_', joint_values=jointPoses_left)
 franka_right.show_sliders(prefix_name='right_', joint_values=jointPoses_right)
 
@@ -135,9 +130,22 @@ franka_right.show_sliders(prefix_name='right_', joint_values=jointPoses_right)
 print("joint poses right = ", jointPoses_right)
 print("joint poses left = ", jointPoses_left)
 
+
+
+#franka_right.apply_action(jointPoses_right[0:7])
+#p.stepSimulation(physicsClientId=physics_client_id)
+
+
+#franka_left.show_sliders(prefix_name='left_', joint_values=jointPoses_left)
+#franka_right.show_sliders(prefix_name='right_', joint_values=jointPoses_right)
+
+
+#print("joint poses right = ", jointPoses_right)
+#print("joint poses left = ", jointPoses_left)
+
   
-print("position right = ",data[1][65])
-print("position left = ",data[1][5])
+#print("position right = ",data[1][65])
+#print("position left = ",data[1][5])
   
   
 """print("--------------")
@@ -180,8 +188,8 @@ while True:
     if 110 in keys: # 'n' to move joint 2
       #franka_left.move_joint_2()
       print("create anchors")
-      p.createSoftBodyAnchor(cylinderId, 5, franka_left.robot_id , 9)
-      p.createSoftBodyAnchor(cylinderId, 69, franka_right.robot_id , 9)
+      p.createSoftBodyAnchor(cylinderId, 112, franka_left.robot_id , 9)
+      p.createSoftBodyAnchor(cylinderId, 527, franka_right.robot_id , 9)
       
     p.stepSimulation(physicsClientId=physics_client_id)  
     
